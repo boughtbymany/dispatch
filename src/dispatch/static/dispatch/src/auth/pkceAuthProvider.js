@@ -1,11 +1,11 @@
-import { AuthorizationNotifier } from "@openid/appauth/built/authorization_request_handler"
+import { BasicQueryStringUtils } from "@openid/appauth/built/query_string_utils"
+import { LocalStorageBackend } from "@openid/appauth/built/storage"
 import { AuthorizationRequest } from "@openid/appauth/built/authorization_request"
+import { AuthorizationNotifier } from "@openid/appauth/built/authorization_request_handler"
+import { RedirectRequestHandler } from "@openid/appauth/built/redirect_based_handler"
 import { AuthorizationServiceConfiguration } from "@openid/appauth/built/authorization_service_configuration"
 import { BaseTokenRequestHandler } from "@openid/appauth/built/token_request_handler"
-import { BasicQueryStringUtils } from "@openid/appauth/built/query_string_utils"
 import { GRANT_TYPE_AUTHORIZATION_CODE, TokenRequest } from "@openid/appauth/built/token_request"
-import { LocalStorageBackend } from "@openid/appauth/built/storage"
-import { RedirectRequestHandler } from "@openid/appauth/built/redirect_based_handler"
 
 import { FetchRequestor } from "@openid/appauth/built/xhr"
 
@@ -14,11 +14,9 @@ import store from "@/store"
 const requestor = new FetchRequestor()
 
 function login(to, from, next) {
-  const clientId = import.meta.env.VITE_DISPATCH_AUTHENTICATION_PROVIDER_PKCE_CLIENT_ID
-  const openIdConnectUrl = import.meta.env
-    .VITE_DISPATCH_AUTHENTICATION_PROVIDER_PKCE_OPEN_ID_CONNECT_URL
+  const clientId = "075676d4-f48c-40da-b03e-a586721bc196"
+  const openIdConnectUrl = "http://localhost:8000"
   const scope = "openid profile email"
-  const useIdToken = import.meta.env.VITE_DISPATCH_AUTHENTICATION_PROVIDER_USE_ID_TOKEN
 
   const notifier = new AuthorizationNotifier()
 
@@ -73,13 +71,10 @@ function login(to, from, next) {
           .performTokenRequest(cfg, req)
           .then((response) => {
             // Redirect to the uri in session storage and then delete it from storage
-            let token = response.accessToken
-            if (useIdToken) {
-              token = response.idToken
-            }
-            store.commit("auth/SET_USER_LOGIN", token)
-            store.dispatch("auth/loginRedirect", localStorage.getItem("redirect_uri")).then(() => {
-              store.dispatch("auth/createExpirationCheck")
+            store.dispatch("auth/login", {
+              token: response.idToken,
+              access_token: response.accessToken,
+              redirectUri: localStorage.getItem("redirect_uri"),
             })
             localStorage.removeItem("redirect_uri")
           })
